@@ -29,7 +29,7 @@ export function Footer () {
               </div>
             </div>
             <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
-              <p>&copy; 2024 Journal of Applied Sciences. All rights reserved.</p>
+              <p>&copy;2026 Journal Of Joseph Sarwuan Tarka University Makurdi  All rights reserved.</p>
             </div>
           </div>
         </footer>

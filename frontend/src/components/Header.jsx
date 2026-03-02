@@ -13,8 +13,8 @@ export function Header () {
                   <span className="text-white font-bold text-xl">J</span>
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Journal of Applied Sciences</h1>
-                  <p className="text-xs text-gray-500">University Research Publication</p>
+                  <h1 className="text-xl font-bold text-gray-900">Journal of Biological Science Sciences</h1>
+                  <p className="text-xs text-gray-500">Federal University of Agriculture Makurdi(FUAM)</p>
                 </div>
               </Link>
               
