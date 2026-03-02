@@ -1,66 +1,38 @@
-import React from "react";
-import "./Footer.css";
+import React from 'react'
+import {Link} from 'react-router'
 
-export function Footer() {
+export function Footer () {
   return (
-    <div className="gpt3__footer section__padding reveal">
-      <div className="gpt3__footer-heading">
-        <h1 className="gradient__text reveal" data-animation="fade-right">
-          Do you want to step in to the future before others
-        </h1>
-      </div>
-
-      <div className="gpt3__footer-btn reveal" data-animation="fade-right">
-        <p>Request Early Access</p>
-      </div>
-
-      <div className="gpt3__footer-links">
-        <div
-          className="gpt3__footer-links_logo reveal"
-          data-animation="fade-left"
-        >
-          <img src="" alt="LOGO" />
-          <p>
-            Crechterwoord K12 182 DK Alknjkcb, <br /> All Rights Reserved
-          </p>
-        </div>
-        <div
-          className="gpt3__footer-links_div reveal"
-          data-animation="fade-right"
-        >
-          <h4>Links</h4>
-          <p>Overons</p>
-          <p>Social Media</p>
-          <p>Counters</p>
-          <p>Contact</p>
-        </div>
-        <div
-          className="gpt3__footer-links_div reveal"
-          data-animation="fade-right"
-        >
-          <h4>Company</h4>
-          <p>Terms & Conditions </p>
-          <p>Privacy Policy</p>
-          <p>Contact</p>
-        </div>
-        <div
-          className="gpt3__footer-links_div reveal"
-          data-animation="fade-right"
-        >
-          <h4>Get in touch</h4>
-          <p>Crechterwoord K12 182 DK Alknjkcb</p>
-          <p>085-132567</p>
-          <p>info@payme.net</p>
-        </div>
-      </div>
-
-      <div
-        className="gpt3__footer-copyright reveal"
-        data-animation="fade-right"
-      >
-        <p>@2021 GPT-3. All rights reserved.</p>
-      </div>
-    </div>
-  );
+    <footer className="bg-gray-900 text-white mt-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div>
+                <h3 className="text-lg font-semibold mb-4">About the Journal</h3>
+                <p className="text-gray-400 text-sm">
+                  A peer-reviewed academic journal publishing cutting-edge research in applied sciences.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+                <ul className="space-y-2 text-sm">
+                  <li><Link to="/articles" className="text-gray-400 hover:text-white transition">Browse Articles</Link></li>
+                  <li><Link to="/submit" className="text-gray-400 hover:text-white transition">Submit Manuscript</Link></li>
+                  <li><Link to="/about" className="text-gray-400 hover:text-white transition">Editorial Board</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Contact</h3>
+                <p className="text-gray-400 text-sm">
+                  Email: journal@university.edu<br />
+                  Phone: +234 XXX XXX XXXX
+                </p>
+              </div>
+            </div>
+            <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
+              <p>&copy; 2024 Journal of Applied Sciences. All rights reserved.</p>
+            </div>
+          </div>
+        </footer>
+  )
 }
 
