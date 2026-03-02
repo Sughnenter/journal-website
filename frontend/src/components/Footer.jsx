@@ -1,7 +1,7 @@
 import React from "react";
 import "./Footer.css";
-import gpt3Logo from "../../assets/logo.svg";
-function Footer() {
+
+export function Footer() {
   return (
     <div className="gpt3__footer section__padding reveal">
       <div className="gpt3__footer-heading">
@@ -19,7 +19,7 @@ function Footer() {
           className="gpt3__footer-links_logo reveal"
           data-animation="fade-left"
         >
-          <img src={gpt3Logo} alt="gpt3_logo" />
+          <img src="" alt="LOGO" />
           <p>
             Crechterwoord K12 182 DK Alknjkcb, <br /> All Rights Reserved
           </p>
@@ -64,4 +64,3 @@ function Footer() {
   );
 }
 
-export default Footer;
