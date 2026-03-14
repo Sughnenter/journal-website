@@ -42,4 +42,19 @@ class Volume(models.Model):
             Volume.objects.filter(is_current=True).update(is_current=False)
         super().save(*args, **kwargs)
 
-class Issue(models.Model)
+class Issue(models.Model):
+    volume = models.ForeignKey(Volume, on_delete=models.CASCADE, related_name='issues') 
+    number = models.IntegerField()
+    month = models.CharField(max_length=20)
+    year = models.IntegerField()
+    publication_date = models.DateField()
+    is_published = models.BooleanField(default=False)
+    cover_image = models.ImageField(upload_to='issues.covers/', null=True, blank=True)
+
+    class meta:
+        ordering = ['-year', '-number']
+        unique_together = ['volume', 'number']
+
+    def __str__(self):
+        return f"Vol. {self.volume.number}, Issue {self.number} ({self.month} {self.year})"
+    
