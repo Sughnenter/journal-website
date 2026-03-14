@@ -205,3 +205,61 @@ class Submission(models.Model):
     
     def __str__(self):
         return f"{self.title} - {self.submitter.get_full_name()}"
+
+
+class Review(models.Model):
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('declined', 'Declined'),
+    ]
+    
+    RECOMMENDATION_CHOICES = [
+        ('accept', 'Accept'),
+        ('minor_revision', 'Minor Revision'),
+        ('major_revision', 'Major Revision'),
+        ('reject', 'Reject'),
+    ]
+
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='reviews')
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+
+    # Review Content
+    comments_to_author = models.TextField(blank=True)
+    comments_to_editor = models.TextField(blank=True)
+    recommendation = models.CharField(max_length=20, choices=RECOMMENDATION_CHOICES, blank=True)
+
+    # Status
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    invited_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    # Ratings (1 -5 Scale)
+    originality = models.IntegerField(null=True, blank=True)
+    methodology = models.IntegerField(null=True, blank=True)
+    significance= models.IntegerField(null=True, blank=True)
+    clarity = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-invited_at']
+        unique_together = ['article', 'reviewer']
+    
+    def __str__(self):
+        return f"Review by {self.reviewer.get_full_name()} for {self.article.title[:50]}"
+
+
+class Comment(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    is_approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"comment by {self.user.username} on {self.article.title[:50]}"
