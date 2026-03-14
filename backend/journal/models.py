@@ -135,3 +135,73 @@ class Article(models.Model):
     
     def get_keywords_list(self):
         return[k.strip() for k in self.keywords.split(',') if k.strip()]
+
+
+class AuthorArticle(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    order = models.IntegerField(default=0)
+    is_corresponding = models.BooleanField(default=False)
+
+    class Meta:
+        ordering =['order']
+        unique_together = ['article', 'author']
+
+    def __str__(self):
+        return f"{self.author.get_full_name()} - {self.article.title[:50]}"
+
+
+class Submission(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('under_review', 'Under Review'),
+        ('revision_requested', 'Revision Requested'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('withdrawn', 'Withdrawn'),
+    ]
+
+    # Manuscript Information
+    title = models.CharField(max_length=500)
+    abstract = models.TextField()
+    keywords = models.CharField(max_length=500)
+    Category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+
+    # Submitter
+    submitter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submissions')
+    co_authors = models.TextField(blank=True, help_text="Co-authors names and affiliations")
+
+    # Files
+    manuscript_file = models.FileField(
+        unique='submissions/',
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'doc', 'docx'])]
+    )
+    cover_letter = models.FileField(
+        upload_to='submissions/cover_letters/',
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'doc', 'docx'])],
+        null=True,
+        blank=True
+    )
+
+    # Status
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_notes = models.TextField(blank=True)
+
+    # Conversion
+    converted_to_article = models.OneToOneField(
+        Article,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='original_submission'
+    )
+
+    # Timestamps
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-submitted_at']
+    
+    def __str__(self):
+        return f"{self.title} - {self.submitter.get_full_name()}"
