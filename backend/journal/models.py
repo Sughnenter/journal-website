@@ -57,4 +57,81 @@ class Issue(models.Model):
 
     def __str__(self):
         return f"Vol. {self.volume.number}, Issue {self.number} ({self.month} {self.year})"
+
+class Article(models.Model):
+
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('submitted', 'Submitted'),
+        ('under_review', 'Under Review'),
+        ('accepted', 'Accepted'),
+        ('published', 'Published'),
+        ('rejected', 'Rejected'),
+    ]
+    #Basic Information
+    title = models.CharField(max_length=500)
+    slug = models.SlugField(max_length=500, unique=True, blank=True)
+    abstract = models.TextField()
+    keywords = models.CharField(max_length=500, help_text="comma-seperated Keywords")
+
+    #Categorization
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='articles')
+    volume = models.ForeignKey(Volume, on_delete=models.SET_NULL, null=True, related_name='articles')
+    issue = models.ForeignKey(Issue, on_delete=models.SET_NULL, null=True, related_name='articles')
+
+    #Authors
+    authors = models.ManyToManyField(User, related_name='articles', through='AuthorArticle')
+    corresponding_author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='corresponding_articles')
+
+    #Publication Details
+    pages = models.CharField(max_length=20, blank=True, help_text="e.g./ 45-67")
+    doi = models.CharField(max_length=100, unique=True, blank=True)
+
+    # Files
+    manuscript_file = models.FileField(
+        upload_to='manuscripts/',
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'doc', 'docx'])],
+        null=True,
+        blank=True
+    )
+    published_pdf = models.FileField(
+        upload_to='published/',
+        validators=[FileExtensionValidator(allowed_extensions=['pdf'])],
+        null=True,
+        blank=True
+    )
+
+    # Status and Dates
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    submitted_date = models.DateTimeField(null=True, blank=True)
+    accepted_date = models.DateTimeField(null=True, blank=True)
+    published_date = models.DateTimeField(null=True, blank=True)
+
+    # Metadata
+    views_count = models.IntegerField(default=0)
+    downloads_count = models.IntegerField(default=0)
+
+    # TimeStamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['published_date', '-created_at']
+        indexes = [
+            models.Index(fields=['status', 'published_date']),
+            models.Indeex(fields=['category', 'published_date']),
+        ]
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)[:500]
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_published(self):
+        return self.status == 'published'
     
+    def get_keywords_list(self):
+        return[k.strip() for k in self.keywords.split(',') if k.strip()]
