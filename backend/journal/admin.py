@@ -119,4 +119,98 @@ class ArticleAdmin(admin.ModelAdmin):
         updated = queryset.update(status='under_review')
         self.message_user(request, f'{updated} article(s) sent to review.')
     send_to_review.short_description = "send to review"
-        
+
+@admin.register(Submission)
+class SubmissionAdmin(admin.ModelAdmin):
+    list_display = [
+        'title_short', 'submitter_name', 'category', 'status',
+        'submitted_at', 'action_buttons'
+    ]
+    list_filter = ['status', 'categoty','submitted_at']
+    search_fields = ['title', 'abstract', 'submitter_username', 'submitter_email']
+    date_hierachy = 'submitted_at'
+    readonly_fields = ['submitted_at', 'updated_at', 'submitter']
+
+    fieldsets = (
+        ('ManuScript Information', {
+            'fields':('title', 'abstract', 'keywords', 'category')
+        }),
+        ('Author Information', {
+            'fields':('submitter', 'co_authors')
+        }),
+        ('Files', {
+            'fields':('manuscript_file', 'cover_letter')
+        }),
+        ('Review and Status', {
+            'fields':('status', 'admin_notes', 'converted_to_article')
+        }),
+        ('Timestamps', {
+            'fields':('submitted_at', 'updated_at'),
+            'cclasses':('collapse',)
+        }),
+    ) 
+
+    actions = ['accept_submissions', 'reject_submissions', 'convert_to_article']
+
+    def title_short(self, obj):
+        return obj.title[:50] + '...' if len(obj.title) > 50 else obj.title 
+    title_short.short_description = 'Title'
+
+    def submitter_name(self, obj):
+        return obj.submitter.get_full_name()
+    submitter_name.short_description = 'Submitter'
+
+    def action_buttons(self, obj):
+        if obj.status  == 'pending':
+            return format_html(
+                '<a class="button" href="#">Review </a> ' 
+                '<a class="button" href="#">Accept </a> ' 
+                '<a class="button" href="#">Reject </a> ' 
+            )
+        return '-'
+    action_buttons.short_description = 'Actions'
+
+    def accept_submissions(self, request, queryset):
+        updated = queryset.update(status='accepted')
+        self.message_user(request, f'{updated} submission(s) accepted.')
+    accept_submissions.short_description = 'Accept Selected Submissions'
+
+    def reject_submissions(self, request, queryset):
+        updated = queryset.update(status='rejected')
+        self.message_user(request, f'{updated} submission(s) rejected.')
+    reject_submissions.short_description = 'Reject selected submissions'
+
+    def convert_to_article(self, request, queryset):
+        # Convert selected submissions to articles
+        count = 0
+        for submission in queryset.filter(status='accepted', convert_to_article=None):
+            # Create article from submission
+            article = Article.objects.create(
+                title=submission.title,
+                abstract=submission.abstract,
+                keywords=submission.keywords,
+                category=submission.category,
+                corresponding_author=submission.submitter,
+                manuscript_file=submission.manuscript_file,
+                status='under_review',
+                submitted_date=submission.submitted_at
+            )
+
+            # Link Submission to article
+            submission.converted_to_article = article
+            submission.save()
+
+            # Add Submitter as First author
+            AuthorArticle.objects.create(
+                article=article,
+                author=submission.submitter,
+                order=1,
+                is_corresponding=True
+            )
+
+            count += 1
+
+        self.message_user(request, f'{count} submission(s) converted to articles.')
+    convert_to_article.short_description = 'Convert to Article'
+
+    
