@@ -127,7 +127,7 @@ class SubmissionAdmin(admin.ModelAdmin):
         'submitted_at', 'action_buttons'
     ]
     list_filter = ['status', 'categoty','submitted_at']
-    search_fields = ['title', 'abstract', 'submitter_username', 'submitter_email']
+    search_fields = ['title', 'abstract', 'submitter__username', 'submitter__email']
     date_hierachy = 'submitted_at'
     readonly_fields = ['submitted_at', 'updated_at', 'submitter']
 
@@ -213,4 +213,41 @@ class SubmissionAdmin(admin.ModelAdmin):
         self.message_user(request, f'{count} submission(s) converted to articles.')
     convert_to_article.short_description = 'Convert to Article'
 
-    
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = [
+        'article_title', 'reviewer_name', 'status', 'recommendation',
+        'invited_at', 'completed_at'
+    ]
+    list_filter = ['status', 'recommendation', 'invited_at']
+    search_fields = ['article__title', 'reviewer__username', 'reviewer__email']
+    date_hierarchy = 'invited_at'
+    readonly_fields = ['invited_at', 'completed_at']
+    autocomplete_fields = ['article', 'reviewer']
+
+    fieldsets = (
+        ('Assignment',{
+            'fields:'('article', 'reviewer', 'status')
+        }),
+        ('Review Content',{
+            'fields:'('recommendation', 'comments_to_author', 'comments_to_editor')
+        }),
+        ('Ratings',{
+            'fields:'('originality', 'mehodology', 'significance', 'clarity')
+        }),
+        ('Timestamps',{
+            'fields':('invited_at', 'completed_at'),
+            'classes':('collapse',)
+        }),
+    )
+
+    def article_title(self, obj):
+        return obj.article.title[:50]
+    article_title.short_description = 'Article'
+
+    def reviewer_name(self, obj):
+        return obj.reviewer.get_full_name()
+    reviewer_name.short_description = 'Reviewer'
+
+
