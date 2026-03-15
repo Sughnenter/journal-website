@@ -2,3 +2,4 @@ pipfile
 pipfile.lock
 # Environment variables
 .env
+requirements.txt
