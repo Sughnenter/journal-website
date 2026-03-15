@@ -119,7 +119,7 @@ class Article(models.Model):
         ordering = ['published_date', '-created_at']
         indexes = [
             models.Index(fields=['status', 'published_date']),
-            models.Indeex(fields=['category', 'published_date']),
+            models.Index(fields=['category', 'published_date']),
         ]
     def save(self, *args, **kwargs):
         if not self.slug:
