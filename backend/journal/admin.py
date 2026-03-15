@@ -251,3 +251,36 @@ class ReviewAdmin(admin.ModelAdmin):
     reviewer_name.short_description = 'Reviewer'
 
 
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ['article_title', 'user_name', 'is_approved', 'created_at']
+    list_filter = ['is_approved', 'created_at']
+    search_fields = ['article__title', 'user__username', 'content']
+    date_hierachy = 'created_at'
+    readonly_fields = ['created_at', 'updated_at']
+
+    actions = ['approve_comments', 'reject_comments']
+
+    def article_title(self, obj):
+        return obj.article.title[:50]
+    article_title.short_description = 'Article'
+
+    def user_name(self, obj):
+        return obj.user.get_full_name()
+    user_name.short_description = 'User'
+
+    def approve_comments(self, request, queryset):
+        updated = queryset.update(is_approved=True)
+        self.message_user(request, f'{updated} comment(s) approved.')
+    approve_comments.short_description = 'Approve selected comments'
+
+    def reject_comments(self, request, queryset):
+        updated = queryset.update(is_approved=False)
+        self.message(request, f'{updated} comment(s) rejected')
+    reject_comments.short_description = 'Reject selected comments'
+
+
+# Admin Site header customization
+admin.site.site_header = 'Journal of Biological Science - Administration'
+admin.site.site_title = 'Journal Admin'
+admin.site.index_title = 'Journal Management Dashboard'
