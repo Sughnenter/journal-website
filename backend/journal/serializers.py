@@ -51,3 +51,40 @@ class AuthorArticleSerializer(serializers.ModelSerializer):
         model = AuthorArticle
         fields = ['id', 'author', 'author_name', 'author_affiliation', 'author_email',
                     'order', 'is_corresponding']
+
+
+class ArticleListSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    authors = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Article
+        fields = ['id', 'title', 'slug', 'abstract', 'category', 'category_name',
+                    'authors', 'published_date', 'doi', 'views_count', 'downloads_count']
+
+    def get_authors(self, obj):
+        author_articles = obj.authorarticle_set.all().order_by('order')
+        return [aa.author.get_full_name() for aa in author_articles]
+
+
+class ArticleDetailSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    authors = AuthorArticleSerializer(source='authorarticle_set', many=True, read_only=True)
+    corresponding_author_name = serializers.CharField(source='corresponding_author.get_full_name', read_only=True)
+    volume_number = serializers.IntegerField(source='volume.number', read_only=True)
+    issue_number = serializers.IntegerField(source='issue.number', read_only=True)
+    keywords_list = serializers.ListField(source='get_keywords_list', read_only=True)
+
+    class Meta:
+        model = Article
+        fields = [
+            'id', 'title', 'slug', 'abstract', 'keywords', 'keywords_list',
+            'category', 'category_name', 'volume', 'volume_number',
+            'issue', 'issue_number', 'authors', 'corresponding_author',
+            'corresponding_author_name', 'pages', 'doi', 'published_pdf',
+            'status', 'published_date', 'views_count', 'downloads_count'
+            'created_at', 'updated_at'
+        ]
+
+        
+    
