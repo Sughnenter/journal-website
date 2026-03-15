@@ -95,4 +95,28 @@ class ArticleAdmin(admin.ModelAdmin):
 
     actions = ['publish_articles', 'accept_articles', 'send_to_review']
 
-    
+    def title_short(self, obj):
+        return obj.title[:50] + '...' if len(obj.title) > 50 else obj.title
+    title_short.short_description = 'title'
+
+    def volume_issue(self, obj):
+        if obj.volume and obj.issue:
+            return f"vol. {obj.volume.number}, Issue {obj.issue.number}"
+        return "-"
+    volume_issue.short_description = 'Volume/Issue'
+
+    def publish_articles(self, request, queryset):
+        updated = queryset.update(status='published', published_date=timezone.now())
+        self.message_user(request, f'{updated} article(s) published succesfully.')
+    publish_articles.short_description = 'publish Selected articles'
+
+    def accept_articles(self, request, queryset):
+        updated =  queryset.update(status='accepted', accepted_date=timezone.now())
+        self.message_user(request, f'{updated} article(s) accepted.')
+    accept_articles.short_description = 'Accept Selected articles'
+
+    def send_to_review(self, request, queryset):
+        updated = queryset.update(status='under_review')
+        self.message_user(request, f'{updated} article(s) sent to review.')
+    send_to_review.short_description = "send to review"
+        
