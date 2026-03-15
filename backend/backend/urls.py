@@ -16,8 +16,27 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from rest_framework_simplejwt.views import(
+    TokenObtainPairView,
+    TokenRefreshView
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('journal.urls')),
+    path('api/', include('journal.urls')),
+    path('api/users', include('users.urls')),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh')
 ]
+
+# Serve media files in development
+if settings.Debug:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Admin site customization
+admin.site.site_header = "Journal of Biological Sciences Admin"
+admin.site.site_title = "Journal Admin Portal"
+admin.site.index_title = "Welcome to Journal Administration"
