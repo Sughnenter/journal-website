@@ -87,4 +87,48 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
         ]
 
         
-    
+class SubmissionSerializer(serializers.ModelSerializer):
+    submitter_name = serializers.CharField(source='submitter.get_full_name', read_only=True)
+    category_name = serializers.ChoiceField(source='category.name', read_only=True)
+
+    class Meta:
+        model = Submission
+        fields = [
+            'id', 'title', 'abstract', 'keywords', 'category', 'category_name',
+            'submitter', 'submitter_name', 'co_authors', 'manuscript_file',
+            'cover_letter', 'status', 'submitted_at', 'updated_at'
+        ]
+        read_only_fields = ['submitter', 'status', 'submitted_at', 'updated_at']
+
+    def create(self, validated_data):
+        # Automatically Set Submitter to Current User
+        validated_data['submitter'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    article_title = serializers.CharField(source='article.title', read_only=True)
+    reviewer_name = serializers.CharField(source='reviewer.get_full_name', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = [
+            'id', 'article', 'article_title', 'reviewer', 'reviewer_name',
+            'comments_to_author', 'comments_to_editor', 'recommendation',
+            'status', 'originality', 'methodology', 'significance', 'clarity',
+            'invited_at', 'completed_at'
+        ]
+        read_only_fields = ['invited_at', 'completed_at']
+
+class CommentSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'article', 'user', 'user_name', 'content',
+                    'is_approved', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'is_approved', 'created_at', 'updated_at']
+
+    def create (self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
