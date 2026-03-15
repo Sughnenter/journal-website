@@ -53,3 +53,46 @@ class IssueAdmin(admin.ModelAdmin):
         return obj.articles.count()
     article_count.short_description = 'Articles'
 
+class AuthorArticleInline(admin.TabularInline):
+    model = AuthorArticle
+    extra = 1
+    autocomplete_fields = ['author']
+    fields = ['author', 'order', 'is_corresponding']
+
+
+@admin.register(Article)
+class ArticleAdmin(admin.ModelAdmin):
+    list_display = [
+        'title_short', 'category', 'status', 'volume_issue',
+        'views_count', 'downloads_count', 'published_date'
+    ]
+    list_filter = ['status', 'category', 'volume', 'published_date']
+    search_fields = ['title', 'abstract', 'keywords', 'doi']
+    date_hierarchy = 'published_date'
+    prepopulated_fields = {'slug':('title',)}
+    autocomplete_fields = ['corresponding_author', 'category']
+    readonly_fields = ['created_at', 'updated_at', 'views_count', 'downloads_count']
+    inlines = [AuthorArticleInline]
+
+    fieldsets = (
+        ('Basic Information',{
+            'fields':('title', 'slug', 'abstract', 'keywords', 'category')
+        }),
+        ('Publication Details', {
+            'fields':('volume', 'issue', 'pages', 'doi', 'corresponding_author')
+        }),
+        ('Files' , {
+            'fields': ('manuscript_file', 'published_pdf')
+        }),
+        ('Status and Dates', {
+            'fields':('status', 'submitted_date', 'accepted_date', 'published_date')
+        }),
+        ('Metadata', {
+            'fields': ('views_count', 'downloads_count', 'created_at', 'updated_at'),
+            'classes':('collapse',)
+        }),
+    )
+
+    actions = ['publish_articles', 'accept_articles', 'send_to_review']
+
+    
