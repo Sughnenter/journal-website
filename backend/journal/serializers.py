@@ -22,4 +22,32 @@ class CatrgorySerializer(serializers.ModelSerializer):
     class meta:
         model = Category
         fields = ['id', 'name', 'slug', 'description', 'article_count']
-        
+
+
+class VolumeSerializer(serializers.ModelSerializer):
+    issue_count = serializers.IntegerField(source='issues.count', read_only=True)
+
+    class Meta:
+        model = Volume
+        fields = ['id', 'number', 'year', 'description', 'is_current', 'issue_count']
+
+
+class IssueSerializer(serializers.ModelSerializer):
+    volume_number = serializers.IntegerField(source='volume.number', read_only=True)
+    article_count = serializers.IntegerField(source='articles.count', read_only=True)
+
+    class Meta:
+        model = Issue
+        fields = ['id', 'volume', 'volume_number', 'number', 'month', 'year',
+                    'publication_date', 'is_published', 'cover_image', 'article_count'
+                ]
+
+class AuthorArticleSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source='author.get_full_name', read_only=True)
+    author_affiliation = serializers.CharField(source='author.affiliation', read_only=True)
+    author_email = serializers.EmailField(source='author.email', read_only=True)
+
+    class Meta:
+        model = AuthorArticle
+        fields = ['id', 'author', 'author_name', 'author_affiliation', 'author_email',
+                    'order', 'is_corresponding']
