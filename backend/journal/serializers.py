@@ -16,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
                     'affiliation', 'bio', 'orcid', 'role']
         read_only_fields = ['id', 'role']
 
-class CatrgorySerializer(serializers.ModelSerializer):
+class CategorySerializer(serializers.ModelSerializer):
     article_count = serializers.IntegerField(source='articles.count', read_only=True)
 
     class meta:
