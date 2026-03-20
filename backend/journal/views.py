@@ -42,7 +42,7 @@ class IssueViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = IssueSerializer
 
     @action(detail=True, methods=['get'])
-    def articles(self, request, pk=None)
+    def articles(self, request, pk=None):
         issue = self.get_object()
         articles = issue.articles.filter(status='published')
         serializer = ArticleListSerializer(articles, many=True)
@@ -115,14 +115,15 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         serializer.save(submitter=self.request.user)
 
     @action(detail=True, methods=['post'])
-    def withdraw(self, request pk=None):
+    def withdraw(self, request, pk=None):
+        """Withdraw a submission"""
         submission = self.get_object()
         if submission.submitter != request.user:
             return Response(
-                {'error': 'you can only withdraw your own submissions'},
+                {'error': 'You can only withdraw your own submissions'},
                 status=status.HTTP_403_FORBIDDEN
             )
-
+        
         submission.status = 'withdrawn'
         submission.save()
         return Response({'message': 'Submission withdrawn successfully'})
