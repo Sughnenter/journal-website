@@ -19,7 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     article_count = serializers.IntegerField(source='articles.count', read_only=True)
 
-    class meta:
+    class Meta:
         model = Category
         fields = ['id', 'name', 'slug', 'description', 'article_count']
 
@@ -89,7 +89,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
         
 class SubmissionSerializer(serializers.ModelSerializer):
     submitter_name = serializers.CharField(source='submitter.get_full_name', read_only=True)
-    category_name = serializers.ChoiceField(source='category.name', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
 
     class Meta:
         model = Submission

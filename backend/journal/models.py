@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from django.core.validators import FileExtensionValidator
 
-User = get_user_model
+User = get_user_model()
 
 # Create your models here.
 
@@ -165,7 +165,7 @@ class Submission(models.Model):
     title = models.CharField(max_length=500)
     abstract = models.TextField()
     keywords = models.CharField(max_length=500)
-    Category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
 
     # Submitter
     submitter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submissions')

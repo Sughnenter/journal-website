@@ -139,7 +139,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
             return Review.objects.all()
         return Review.objects.filter(reviewer=user)
 
-    @action(detaiil=True, methods=['post'])
+    @action(detail=True, methods=['post'])
     def submit_review(self, request, pk=None):
         
 

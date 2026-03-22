@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.contrib.auth import UserAdmin as BaseUserAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User
 from django.utils import timezone
 
@@ -7,7 +7,7 @@ from django.utils import timezone
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     list_display = ['username', 'email', 'first_name', 'last_name', 'role', 'affiliation', 'is_verified', 'date_joined']
-    list_filter = ['role', 'is_verified', 'is_staff' 'is_active', 'date_joined']
+    list_filter = ['role', 'is_verified', 'is_staff', 'is_active', 'date_joined']
     search_fields = ['username', 'email', 'first_name', 'last_name', 'affiliation']
     ordering = ['-date_joined']
 
