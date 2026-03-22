@@ -5,16 +5,24 @@ import {ArticlesPage} from './pages/ArticlesPage';
 import {ArticleDetailPage} from './pages/ArticleDetailPage';
 import {SubmitPage} from './pages/SubmitPage';
 import {AboutPage} from './pages/AboutPage';
+import {DashboardPage} from './pages/DashboardPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { LoginPage } from './pages/LoginPage';
+import { AuthProvider } from './context/AuthContext';
+import {ProtectedRoute} from './components/ProtectedRoute';
+import { Navigation } from './components/Navigation';
 import {Routes, Route, Router, Link} from 'react-router';
 
 //import axios from "axios";
 
 
-function App(){
+
+function AppContent(){
   return(
     <>
+      
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        <Navigation />
 
         {/* Main Content */}
         <Routes>
@@ -23,6 +31,18 @@ function App(){
           <Route path="/articles/:id" element={<ArticleDetailPage />} />
           <Route path="/submit" element={<SubmitPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* Protected Routes */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            } 
+          />
         </Routes>
 
         {/* Footer */}
@@ -30,6 +50,14 @@ function App(){
       </div>
     </>
   )
+}
+
+function App() {
+  return (
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+  );
 }
 
 export default App

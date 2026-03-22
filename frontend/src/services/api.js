@@ -1,11 +1,14 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+// Vite exposes env vars on import.meta.env (VITE_ prefix). Fall back to window env for other setups.
+const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
+  || (globalThis.process && globalThis.process.env && globalThis.process.env.REACT_APP_API_URL)
+  || 'http://localhost:8000/api';
 
 // Helper function to get auth headers
-const getAuthHeaders = () =>{
+const getAuthHeaders = () => {
   const token = localStorage.getItem('access_token');
   return {
-    'Content-Type':'application/json',
-    ...(token && {'Authorization':`Bearer ${token}`})
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   };
 };
 
@@ -21,20 +24,20 @@ const handleResponse = async (response) => {
 // Authentication APIs
 export const authAPI = {
   // Login
-  login: async (username, password) =>{
+  login: async (username, password) => {
     const response = await fetch(`${API_BASE_URL}/token/`, {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body:JSON.stringify({username, password})
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
     });
-    return handleResponse(response);  
+    return handleResponse(response);
   },
 
   // Register
-  register: async (userData) =>{
+  register: async (userData) => {
     const response = await fetch(`${API_BASE_URL}/users/register/`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData)
     });
     return handleResponse(response);
@@ -46,7 +49,7 @@ export const authAPI = {
       headers: getAuthHeaders()
     });
     return handleResponse(response);
-    
+
   },
 
   // Change Password
@@ -58,18 +61,18 @@ export const authAPI = {
     });
     return handleResponse(response);
   },
-  
+
   //Refresh token
   refreshToken: async (refresh) => {
     const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh })
     });
     return handleResponse(response);
   }
-};  
-  //Articles APIs
+};
+//Articles APIs
 export const articlesAPI = {
   getAll: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
@@ -87,7 +90,7 @@ export const articlesAPI = {
     return handleResponse(response);
   },
 
-  trackDownload: async(slug) => {
+  trackDownload: async (slug) => {
     const response = await fetch(`${API_BASE_URL}/articles/${slug}/download/`, {
       method: 'POST',
       headers: getAuthHeaders()
@@ -104,18 +107,18 @@ export const submissionsAPI = {
     });
     return handleResponse(response);
   },
-  
+
   create: async (formData) => {
     const token = localStorage.getItem('access_token');
     const response = await fetch(`${API_BASE_URL}/submissions/`, {
       method: 'POST',
       headers: {
-        ...(token && {'Authorization': `Bearer ${token}`})
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
       body: formData
     });
     return handleResponse(response);
-  },   
+  },
 
   withdraw: async (id) => {
     const response = await fetch(`${API_BASE_URL}/submissions/${id}/withdraw/`, {

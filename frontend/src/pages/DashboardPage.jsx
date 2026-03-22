@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { submissionsAPI } from '../services/api';
 
-function DashboardPage() {
+export function DashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState([]);
@@ -238,4 +238,4 @@ function DashboardPage() {
   );
 }
 
-export default DashboardPage;
+
