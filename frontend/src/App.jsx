@@ -8,6 +8,7 @@ import {AboutPage} from './pages/AboutPage';
 import {DashboardPage} from './pages/DashboardPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { LoginPage } from './pages/LoginPage';
+import {ProfilePage} from './pages/ProfilePage'
 import { AuthProvider } from './context/AuthContext';
 import {ProtectedRoute} from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
@@ -40,6 +41,14 @@ function AppContent(){
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             } 
           />

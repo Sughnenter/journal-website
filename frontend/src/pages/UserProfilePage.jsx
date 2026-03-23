@@ -1,16 +1,17 @@
-import React, {useState, useEffect} from "react";
-import { Link, useNavigate } from "react-router";
-import { useAuth } from "../context/AuthContext";
-import { authAPI } from "../services/api";
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { useAuth } from '../context/AuthContext';
+import { authAPI } from '../services/api';
 
-export function UserProfilePage(){
-  const {user, updateUser, logout} = useAuth();
+function UserProfilePage() {
+  const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("profile");
+  
+  const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({type: '', text:''});
-
-  // Profile from state
+  const [message, setMessage] = useState({ type: '', text: '' });
+  
+  // Profile form state
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
@@ -19,8 +20,9 @@ export function UserProfilePage(){
     bio: '',
     phone: '',
     orcid: ''
-  })
-
+  });
+  
+  // Password form state
   const [passwordData, setPasswordData] = useState({
     old_password: '',
     new_password: '',
@@ -39,7 +41,7 @@ export function UserProfilePage(){
         orcid: user.orcid || ''
       });
     }
-  }, [user])
+  }, [user]);
 
   const handleProfileChange = (e) => {
     setProfileData({
@@ -58,14 +60,14 @@ export function UserProfilePage(){
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage({type:'', text:''});
-    
+    setMessage({ type: '', text: '' });
+
     try {
       const updatedUser = await authAPI.updateProfile(profileData);
-      updatedUser(updatedUser);
-      setMessage({type: 'success', text:'Profile updated successfully!'});
+      updateUser(updatedUser);
+      setMessage({ type: 'success', text: 'Profile updated successfully!' });
     } catch (error) {
-      setMessage({type:'error', text:error.message || 'Failed to update profile'});
+      setMessage({ type: 'error', text: error.message || 'Failed to update profile' });
     } finally {
       setLoading(false);
     }
@@ -73,30 +75,30 @@ export function UserProfilePage(){
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-
+    
     if (passwordData.new_password !== passwordData.new_password2) {
-      setMessage({type:'error', text:'New passwords do not match'})
+      setMessage({ type: 'error', text: 'New passwords do not match' });
       return;
     }
 
     if (passwordData.new_password.length < 8) {
-      setMessage({type:'error', text:'Password must be at least 8 characters'})
+      setMessage({ type: 'error', text: 'Password must be at least 8 characters' });
       return;
     }
 
     setLoading(true);
-    setMessage({type:'', text:''});
+    setMessage({ type: '', text: '' });
 
-    try{
+    try {
       await authAPI.changePassword(passwordData);
-      setMessage({type:'success', text:'Password changed successfully!'});
+      setMessage({ type: 'success', text: 'Password changed successfully!' });
       setPasswordData({
         old_password: '',
         new_password: '',
         new_password2: ''
       });
     } catch (error) {
-      setMessage({type:'error', text:error.message || 'Failed to change password'})
+      setMessage({ type: 'error', text: error.message || 'Failed to change password' });
     } finally {
       setLoading(false);
     }
@@ -104,8 +106,8 @@ export function UserProfilePage(){
 
   const handleDeleteAccount = () => {
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      //TODO : implement delete account API call
-      alert('Account deletion is not implemented yet.');
+      // TODO: Implement account deletion
+      alert('Account deletion feature coming soon');
     }
   };
 
@@ -468,5 +470,6 @@ export function UserProfilePage(){
       </div>
     </div>
   );
-
 }
+
+export default UserProfilePage;

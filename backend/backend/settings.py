@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
@@ -165,7 +166,7 @@ REST_FRAMEWORK = {
 }
 
 #JWT Settings
-from datetime import timedelta
+
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
@@ -178,8 +179,8 @@ SIMPLE_JWT = {
 # Cors Settings
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
 ]
 
 CORS_ALLOWED_CREDENTIALS = True
