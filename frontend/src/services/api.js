@@ -6,6 +6,16 @@ const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && i
 // Helper function to get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem('access_token');
+  // Basic validation: token should be a non-empty string. If it's malformed, clear it to avoid sending invalid value.
+  if (token && typeof token === 'string') {
+    // JWTs are typically three dot-separated parts. If token doesn't look like a JWT, keep it but log in dev.
+    if (token.split('.').length < 2) {
+      // malformed token — remove to avoid backend errors
+      localStorage.removeItem('access_token');
+      return { 'Content-Type': 'application/json' };
+    }
+  }
+
   return {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -30,7 +40,15 @@ export const authAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
-    return handleResponse(response);
+    const data = await handleResponse(response);
+    // Persist tokens immediately to ensure subsequent protected requests include Authorization
+    if (data?.access) {
+      localStorage.setItem('access_token', data.access);
+    }
+    if (data?.refresh) {
+      localStorage.setItem('refresh_token', data.refresh);
+    }
+    return data;
   },
 
   // Register
