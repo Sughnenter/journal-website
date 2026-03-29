@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { articlesAPI } from '../services/api';
 
 export function HomePage() {

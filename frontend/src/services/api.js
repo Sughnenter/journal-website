@@ -1,164 +1,176 @@
-// Vite exposes env vars on import.meta.env (VITE_ prefix). Fall back to window env for other setups.
-const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
-  || (globalThis.process && globalThis.process.env && globalThis.process.env.REACT_APP_API_URL)
-  || 'http://localhost:8000/api';
+import axios from 'axios';
 
-// Helper function to get auth headers
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('access_token');
-  // Basic validation: token should be a non-empty string. If it's malformed, clear it to avoid sending invalid value.
-  if (token && typeof token === 'string') {
-    // JWTs are typically three dot-separated parts. If token doesn't look like a JWT, keep it but log in dev.
-    if (token.split('.').length < 2) {
-      // malformed token — remove to avoid backend errors
-      localStorage.removeItem('access_token');
-      return { 'Content-Type': 'application/json' };
+// Create axios instance with base configuration
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      // Server responded with error status
+      const message = error.response.data?.detail || 
+                     error.response.data?.message || 
+                     `Error: ${error.response.status}`;
+      return Promise.reject(new Error(message));
+    } else if (error.request) {
+      // Request made but no response
+      return Promise.reject(new Error('Cannot connect to server. Make sure the backend is running on port 8000.'));
+    } else {
+      // Something else happened
+      return Promise.reject(error);
     }
   }
-
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-  };
-};
-
-// Helper function to handle API errors
-const handleResponse = async (response) => {
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || error.message || 'An error occured');
-  }
-  return response.json();
-};
+);
 
 // Authentication APIs
 export const authAPI = {
   // Login
   login: async (username, password) => {
-    const response = await fetch(`${API_BASE_URL}/token/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
-    const data = await handleResponse(response);
-    // Persist tokens immediately to ensure subsequent protected requests include Authorization
-    if (data?.access) {
-      localStorage.setItem('access_token', data.access);
-    }
-    if (data?.refresh) {
-      localStorage.setItem('refresh_token', data.refresh);
-    }
-    return data;
+    const response = await api.post('/token/', { username, password });
+    return response.data;
   },
 
   // Register
   register: async (userData) => {
-    const response = await fetch(`${API_BASE_URL}/users/register/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    });
-    return handleResponse(response);
+    const response = await api.post('/users/register/', userData);
+    return response.data;
   },
 
   // Get user profile
   getProfile: async () => {
-    const response = await fetch(`${API_BASE_URL}/users/profile/`, {
-      headers: getAuthHeaders()
-    });
-    return handleResponse(response);
-
+    const response = await api.get('/users/profile/');
+    return response.data;
   },
 
-  // Change Password
+  // Update profile
+  updateProfile: async (userData) => {
+    const response = await api.put('/users/profile/', userData);
+    return response.data;
+  },
+
+  // Change password
   changePassword: async (passwords) => {
-    const response = await fetch(`${API_BASE_URL}/users/change-password/`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(passwords)
-    });
-    return handleResponse(response);
+    const response = await api.put('/users/change-password/', passwords);
+    return response.data;
   },
 
-  //Refresh token
+  // Refresh token
   refreshToken: async (refresh) => {
-    const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh })
-    });
-    return handleResponse(response);
+    const response = await api.post('/token/refresh/', { refresh });
+    return response.data;
   }
 };
-//Articles APIs
+
+// Articles APIs
 export const articlesAPI = {
   getAll: async (params = {}) => {
-    const queryString = new URLSearchParams(params).toString();
-    const response = await fetch(`${API_BASE_URL}/articles/?${queryString}`);
-    return handleResponse(response);
+    const response = await api.get('/articles/', { params });
+    return response.data;
   },
 
   getBySlug: async (slug) => {
-    const response = await fetch(`${API_BASE_URL}/articles/${slug}/`);
-    return handleResponse(response);
+    const response = await api.get(`/articles/${slug}/`);
+    return response.data;
   },
 
   search: async (query) => {
-    const response = await fetch(`${API_BASE_URL}/articles/?search=${encodeURIComponent(query)}`);
-    return handleResponse(response);
+    const response = await api.get('/articles/', { 
+      params: { search: query } 
+    });
+    return response.data;
   },
 
   trackDownload: async (slug) => {
-    const response = await fetch(`${API_BASE_URL}/articles/${slug}/download/`, {
-      method: 'POST',
-      headers: getAuthHeaders()
+    const response = await api.post(`/articles/${slug}/download/`);
+    return response.data;
+  },
+
+  getLatest: async (count = 4) => {
+    const response = await api.get('/articles/', {
+      params: { 
+        ordering: '-published_date',
+        page_size: count 
+      }
     });
-    return handleResponse(response);
+    return response.data;
   }
 };
 
 // Submissions APIs
 export const submissionsAPI = {
   getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/submissions/`, {
-      headers: getAuthHeaders()
-    });
-    return handleResponse(response);
+    const response = await api.get('/submissions/');
+    return response.data;
   },
 
   create: async (formData) => {
-    const token = localStorage.getItem('access_token');
-    const response = await fetch(`${API_BASE_URL}/submissions/`, {
-      method: 'POST',
+    // For file uploads, use different headers
+    const response = await api.post('/submissions/', formData, {
       headers: {
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'multipart/form-data',
       },
-      body: formData
     });
-    return handleResponse(response);
+    return response.data;
   },
 
   withdraw: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/submissions/${id}/withdraw/`, {
-      method: 'POST',
-      headers: getAuthHeaders()
-    });
-    return handleResponse(response);
+    const response = await api.post(`/submissions/${id}/withdraw/`);
+    return response.data;
   }
 };
 
 // Categories API
-export const CategoriesAPI = {
+export const categoriesAPI = {
   getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/categories/`);
-    return handleResponse(response);
+    const response = await api.get('/categories/');
+    return response.data;
   }
 };
 
-export default {
-  auth: authAPI,
-  articles: articlesAPI,
-  submissions: submissionsAPI,
-  categories: CategoriesAPI
+// Volumes API
+export const volumesAPI = {
+  getAll: async () => {
+    const response = await api.get('/volumes/');
+    return response.data;
+  },
+
+  getIssues: async (volumeId) => {
+    const response = await api.get(`/volumes/${volumeId}/issues/`);
+    return response.data;
+  }
 };
 
+// Issues API
+export const issuesAPI = {
+  getAll: async () => {
+    const response = await api.get('/issues/');
+    return response.data;
+  },
+
+  getArticles: async (issueId) => {
+    const response = await api.get(`/issues/${issueId}/articles/`);
+    return response.data;
+  }
+};
+
+export default api;
