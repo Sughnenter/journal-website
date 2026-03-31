@@ -23,22 +23,72 @@ api.interceptors.request.use(
 );
 
 // Response interceptor for error handling
+// api.js - replace your current response interceptor with this
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => error ? prom.reject(error) : prom.resolve(token));
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response) {
-      // Server responded with error status
-      const message = error.response.data?.detail || 
-                     error.response.data?.message || 
-                     `Error: ${error.response.status}`;
-      return Promise.reject(new Error(message));
-    } else if (error.request) {
-      // Request made but no response
-      return Promise.reject(new Error('Cannot connect to server. Make sure the backend is running on port 8000.'));
-    } else {
-      // Something else happened
-      return Promise.reject(error);
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refresh = localStorage.getItem('refresh_token');
+
+      if (!refresh) {
+        // No refresh token — clear everything and redirect to login
+        localStorage.removeItem('access_token');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      try {
+        const { data } = await axios.post(
+          `${api.defaults.baseURL}/token/refresh/`,
+          { refresh }
+        );
+        localStorage.setItem('access_token', data.access);
+        // If backend rotates refresh tokens, save the new one too
+        if (data.refresh) localStorage.setItem('refresh_token', data.refresh);
+
+        api.defaults.headers.common.Authorization = `Bearer ${data.access}`;
+        processQueue(null, data.access);
+        originalRequest.headers.Authorization = `Bearer ${data.access}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
+    // All other errors
+    const message = error.response?.data?.detail ||
+                    error.response?.data?.message ||
+                    (error.request ? 'Cannot connect to server. Make sure the backend is running on port 8000.' : error.message);
+    return Promise.reject(new Error(message));
   }
 );
 

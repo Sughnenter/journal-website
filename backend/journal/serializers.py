@@ -56,16 +56,33 @@ class AuthorArticleSerializer(serializers.ModelSerializer):
 class ArticleListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     authors = serializers.SerializerMethodField()
+    volume_number = serializers.IntegerField(source='volume.number', read_only=True)
+    issue_number  = serializers.IntegerField(source='issue.number', read_only=True)
+    keywords_list = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
-        fields = ['id', 'title', 'slug', 'abstract', 'category', 'category_name',
-                    'authors', 'published_date', 'doi', 'views_count', 'downloads_count']
+        fields = [
+            'id', 'title', 'slug', 'abstract', 'keywords', 'keywords_list',
+            'category', 'category_name', 'authors',
+            'volume', 'volume_number', 'issue', 'issue_number',
+            'pages', 'doi', 'published_pdf',
+            'published_date', 'views_count', 'downloads_count', 'status'
+        ]
 
     def get_authors(self, obj):
         author_articles = obj.authorarticle_set.all().order_by('order')
-        return [aa.author.get_full_name() for aa in author_articles]
+        return [
+            {
+                'author_name': aa.author.get_full_name() or aa.author.username,
+                'author_affiliation': getattr(aa, 'affiliation', ''),
+                'is_corresponding': obj.corresponding_author_id == aa.author_id,
+            }
+            for aa in author_articles
+        ]
 
+    def get_keywords_list(self, obj):
+        return obj.get_keywords_list()
 
 class ArticleDetailSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
