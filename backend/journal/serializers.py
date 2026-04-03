@@ -99,7 +99,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
             'category', 'category_name', 'volume', 'volume_number',
             'issue', 'issue_number', 'authors', 'corresponding_author',
             'corresponding_author_name', 'pages', 'doi', 'published_pdf',
-            'status', 'published_date', 'views_count', 'downloads_count'
+            'status', 'published_date', 'views_count', 'downloads_count',
             'created_at', 'updated_at'
         ]
 
