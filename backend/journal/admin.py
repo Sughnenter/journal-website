@@ -164,17 +164,20 @@ class SubmissionAdmin(admin.ModelAdmin):
     title_short.short_description = 'Title'
     
     def submitter_name(self, obj):
-        return obj.submitter.get_full_name()
+        if not obj.submitter:
+            return '—'
+        full = obj.submitter.get_full_name()
+        return full if full.strip() else obj.submitter.username  # fallback if name not set
     submitter_name.short_description = 'Submitter'
     
     def action_buttons(self, obj):
         if obj.status == 'pending':
+            review_url = reverse('admin:journal_submission_change', args=[obj.pk])
             return format_html(
-                '<a class="button" href="#">Review</a> '
-                '<a class="button" href="#">Accept</a> '
-                '<a class="button" href="#">Reject</a>'
+                '<a class="button" href="{}">Review</a> ',
+                review_url
             )
-        return '-'
+        return obj.get_status_display()
     action_buttons.short_description = 'Actions'
     
     def accept_submissions(self, request, queryset):
@@ -188,10 +191,22 @@ class SubmissionAdmin(admin.ModelAdmin):
     reject_submissions.short_description = "Reject selected submissions"
     
     def convert_to_article(self, request, queryset):
-        """Convert accepted submissions to articles"""
+    # Get the current active issue
+        current_issue = Issue.objects.filter(
+            is_published=True,
+            volume__is_current=True
+        ).order_by('-publication_date').first()
+
+        if not current_issue:
+            self.message_user(
+                request,
+                'No active issue found. Please create a current Volume and Issue first.',
+                level='error'
+            )
+            return
+
         count = 0
         for submission in queryset.filter(status='accepted', converted_to_article=None):
-            # Create article from submission
             article = Article.objects.create(
                 title=submission.title,
                 abstract=submission.abstract,
@@ -200,26 +215,26 @@ class SubmissionAdmin(admin.ModelAdmin):
                 corresponding_author=submission.submitter,
                 manuscript_file=submission.manuscript_file,
                 status='under_review',
-                submitted_date=submission.submitted_at
+                submitted_date=submission.submitted_at,
+                volume=current_issue.volume,   # ← auto-assigned
+                issue=current_issue,           # ← auto-assigned
             )
-            
-            # Link submission to article
             submission.converted_to_article = article
+            submission.status = 'converted'
             submission.save()
-            
-            # Add submitter as first author
+
             AuthorArticle.objects.create(
                 article=article,
                 author=submission.submitter,
                 order=1,
                 is_corresponding=True
             )
-            
             count += 1
-        
-        self.message_user(request, f'{count} submission(s) converted to articles.')
-    convert_to_article.short_description = "Convert to Article"
 
+        self.message_user(
+            request,
+            f'{count} submission(s) converted and assigned to {current_issue}.'
+        )
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
@@ -254,8 +269,9 @@ class ReviewAdmin(admin.ModelAdmin):
     article_title.short_description = 'Article'
     
     def reviewer_name(self, obj):
-        return obj.reviewer.get_full_name()
-    reviewer_name.short_description = 'Reviewer'
+        if not obj.reviewer:
+            return '—'
+        return obj.reviewer.get_full_name() or obj.reviewer.username
 
 
 @admin.register(Comment)
@@ -273,8 +289,9 @@ class CommentAdmin(admin.ModelAdmin):
     article_title.short_description = 'Article'
     
     def user_name(self, obj):
-        return obj.user.get_full_name()
-    user_name.short_description = 'User'
+        if not obj.user:
+            return '—'
+        return obj.user.get_full_name() or obj.user.username
     
     def approve_comments(self, request, queryset):
         updated = queryset.update(is_approved=True)
