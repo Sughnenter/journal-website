@@ -131,12 +131,12 @@ class ArticleAdmin(admin.ModelAdmin):
 class SubmissionAdmin(admin.ModelAdmin):
     list_display = [
         'title_short', 'submitter_name', 'category', 'status',
-        'submitted_at', 'action_buttons'
+        'page_count', 'submitted_at', 'action_buttons'
     ]
     list_filter = ['status', 'category', 'submitted_at']
     search_fields = ['title', 'abstract', 'submitter__username', 'submitter__email']
     date_hierarchy = 'submitted_at'
-    readonly_fields = ['submitted_at', 'updated_at', 'submitter']
+    readonly_fields = ['submitted_at', 'updated_at', 'submitter', 'page_count']
     
     fieldsets = (
         ('Manuscript Information', {
@@ -191,22 +191,40 @@ class SubmissionAdmin(admin.ModelAdmin):
     reject_submissions.short_description = "Reject selected submissions"
     
     def convert_to_article(self, request, queryset):
-    # Get the current active issue
         current_issue = Issue.objects.filter(
             is_published=True,
             volume__is_current=True
         ).order_by('-publication_date').first()
 
         if not current_issue:
-            self.message_user(
-                request,
-                'No active issue found. Please create a current Volume and Issue first.',
-                level='error'
-            )
+            self.message_user(request, 'No active issue found.', level='error')
             return
+
+        # Calculate the next available start page in this issue
+        last_article = Article.objects.filter(
+            issue=current_issue
+        ).order_by('-id').first()
+
+        next_start_page = 1
+        if last_article and last_article.pages:
+            try:
+                # Parse "45-67" → take the end page + 1
+                end = int(last_article.pages.split('-')[-1].strip())
+                next_start_page = end + 1
+            except (ValueError, IndexError):
+                pass
 
         count = 0
         for submission in queryset.filter(status='accepted', converted_to_article=None):
+            # Build page range from next_start_page + submission page count
+            page_count = submission.page_count or extract_page_count(submission.manuscript_file)
+            if page_count:
+                end_page = next_start_page + page_count - 1
+                pages = f"{next_start_page}-{end_page}"
+                next_start_page = end_page + 1  # advance for the next article in batch
+            else:
+                pages = ''  # leave blank if we couldn't extract
+
             article = Article.objects.create(
                 title=submission.title,
                 abstract=submission.abstract,
@@ -216,9 +234,11 @@ class SubmissionAdmin(admin.ModelAdmin):
                 manuscript_file=submission.manuscript_file,
                 status='under_review',
                 submitted_date=submission.submitted_at,
-                volume=current_issue.volume,   # ← auto-assigned
-                issue=current_issue,           # ← auto-assigned
+                volume=current_issue.volume,
+                issue=current_issue,
+                pages=pages,            # ← auto-filled
             )
+
             submission.converted_to_article = article
             submission.status = 'converted'
             submission.save()
@@ -233,7 +253,7 @@ class SubmissionAdmin(admin.ModelAdmin):
 
         self.message_user(
             request,
-            f'{count} submission(s) converted and assigned to {current_issue}.'
+            f'{count} submission(s) converted and assigned to {current_issue} with pages auto-filled.'
         )
 
 @admin.register(Review)

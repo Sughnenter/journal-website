@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ValidationError
+from .utils import extract_page_count
 
 User = get_user_model()
 
@@ -135,6 +137,12 @@ class Article(models.Model):
     
     def get_keywords_list(self):
         return[k.strip() for k in self.keywords.split(',') if k.strip()]
+    def clean(self):
+        if self.issue and not self.issue.is_published:
+            raise ValidationError({
+                'issue': 'Cannot assign an article to a closed issue. '
+                    'Please select an active published issue.'
+            })
 
 
 class AuthorArticle(models.Model):
@@ -199,12 +207,19 @@ class Submission(models.Model):
     # Timestamps
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    page_count = models.IntegerField(null=True, blank=True, help_text="Auto-extracted from manuscript")
 
     class Meta:
         ordering = ['-submitted_at']
     
     def __str__(self):
         return f"{self.title} - {self.submitter.get_full_name()}"
+
+    def save(self, *args, **kwargs):
+        # Extract page count when manuscript is first uploaded
+        if self.manuscript_file and not self.page_count:
+            self.page_count = extract_page_count(self.manuscript_file)
+        super().save(*args, **kwargs)
 
 
 class Review(models.Model):
