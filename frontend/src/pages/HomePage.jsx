@@ -135,7 +135,7 @@ export function HomePage() {
                 <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                   <div className="text-sm text-gray-600">
                     {article.authors && article.authors.length > 0 
-                      ? `${article.authors[0]} ${article.authors.length > 1 ? `+${article.authors.length - 1}` : ''}`
+                      ? `${article.authors[0].author_name} ${article.authors.length > 1 ? `+${article.authors.length - 1}` : ''}`
                       : 'Unknown'}
                   </div>
                   <Link 

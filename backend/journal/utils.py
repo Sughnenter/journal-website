@@ -26,20 +26,12 @@ def extract_page_count(file_field):
 
 def _count_pdf_pages(file_field):
     from pypdf import PdfReader
-    file_field.open('rb')
-    reader = PdfReader(file_field)
-    count = len(reader.pages)
-    file_field.close()
-    return count
-
+    # Read from path on disk, not from the file object
+    reader = PdfReader(file_field.path)
+    return len(reader.pages)
 
 def _estimate_docx_pages(file_field):
     from docx import Document
-    file_field.open('rb')
-    doc = Document(file_field)
-    file_field.close()
-
-    # Estimate: count paragraphs' word totals, ~250 words per page
+    doc = Document(file_field.path)
     word_count = sum(len(p.text.split()) for p in doc.paragraphs)
-    estimated_pages = max(1, round(word_count / 250))
-    return estimated_pages
+    return max(1, round(word_count / 250))

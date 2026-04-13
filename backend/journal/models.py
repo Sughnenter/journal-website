@@ -216,10 +216,18 @@ class Submission(models.Model):
         return f"{self.title} - {self.submitter.get_full_name()}"
 
     def save(self, *args, **kwargs):
-        # Extract page count when manuscript is first uploaded
-        if self.manuscript_file and not self.page_count:
-            self.page_count = extract_page_count(self.manuscript_file)
-        super().save(*args, **kwargs)
+        # Extract page count AFTER saving so the file is fully written first
+        is_new = self.pk is None
+        super().save(*args, **kwargs)  # ← save first, file is now on disk
+        
+        if is_new and self.manuscript_file and not self.page_count:
+            try:
+                self.page_count = extract_page_count(self.manuscript_file)
+                if self.page_count:
+                    # Save only the page_count field, don't re-trigger full save
+                    Submission.objects.filter(pk=self.pk).update(page_count=self.page_count)
+            except Exception:
+                pass  # page count is optional, never block submission
 
 
 class Review(models.Model):
