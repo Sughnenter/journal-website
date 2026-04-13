@@ -168,7 +168,7 @@ export function ArticlesPage() {
                         {article.category_name}
                       </span>
                       <span className="text-sm text-gray-500">
-                        Vol. {article.volume}, Issue {article.issue}
+                        Vol. {article.volume_number}, Issue {article.issue_number}
                       </span>
                     </div>
 
