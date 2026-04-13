@@ -1,4 +1,6 @@
 from django.contrib import admin
+import uuid
+from journal.utils import extract_page_count
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils import timezone
@@ -225,6 +227,9 @@ class SubmissionAdmin(admin.ModelAdmin):
             else:
                 pages = ''  # leave blank if we couldn't extract
 
+            placeholder_doi = f"10.pending/{uuid.uuid4().hex[:10]}"
+
+            
             article = Article.objects.create(
                 title=submission.title,
                 abstract=submission.abstract,
@@ -236,7 +241,8 @@ class SubmissionAdmin(admin.ModelAdmin):
                 submitted_date=submission.submitted_at,
                 volume=current_issue.volume,
                 issue=current_issue,
-                pages=pages,            # ← auto-filled
+                pages=pages,   
+                doi=placeholder_doi,# ← auto-filled
             )
 
             submission.converted_to_article = article

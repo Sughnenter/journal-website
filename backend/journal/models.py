@@ -87,7 +87,7 @@ class Article(models.Model):
 
     #Publication Details
     pages = models.CharField(max_length=20, blank=True, help_text="e.g./ 45-67")
-    doi = models.CharField(max_length=100, unique=True, blank=True)
+    doi = models.CharField(max_length=100, unique=True, blank=True, null=True, default=None)
 
     # Files
     manuscript_file = models.FileField(
