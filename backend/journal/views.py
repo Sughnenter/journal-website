@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from django.utils import timezone
+from .emails import send_submission_received, send_submission_status_changed, send_article_published
 
 from .models import (
     Category, Volume, Issue, Article, Submission, Review, Comment
@@ -117,7 +118,8 @@ class SubmissionViewSet(viewsets.ModelViewSet):
             return Submission.objects.filter(submitter=user)
 
     def perform_create(self, serializer):
-        serializer.save(submitter=self.request.user)
+        submission = serializer.save(submitter=self.request.user)
+        send_submission_received(submission)
 
     @action(detail=True, methods=['post'])
     def withdraw(self, request, pk=None):

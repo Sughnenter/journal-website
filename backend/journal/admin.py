@@ -4,6 +4,7 @@ from journal.utils import extract_page_count
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils import timezone
+from .emails import send_submission_status_changed, send_article_published
 from .models import (
     Category, Volume, Issue, Article, AuthorArticle,
     Submission, Review, Comment
@@ -114,8 +115,12 @@ class ArticleAdmin(admin.ModelAdmin):
     volume_issue.short_description = 'Volume/Issue'
     
     def publish_articles(self, request, queryset):
-        updated = queryset.update(status='published', published_date=timezone.now())
-        self.message_user(request, f'{updated} article(s) published successfully.')
+        for article in queryset:
+            article.status = 'published'
+            article.published_date = timezone.now()
+            article.save()
+            send_article_published(article)              # ← notify corresponding author
+        self.message_user(request, f'{queryset.count()} article(s) published.')
     publish_articles.short_description = "Publish selected articles"
     
     def accept_articles(self, request, queryset):
@@ -183,13 +188,19 @@ class SubmissionAdmin(admin.ModelAdmin):
     action_buttons.short_description = 'Actions'
     
     def accept_submissions(self, request, queryset):
-        updated = queryset.update(status='accepted')
-        self.message_user(request, f'{updated} submission(s) accepted.')
+        for submission in queryset:
+            submission.status = 'accepted'
+            submission.save()
+            send_submission_status_changed(submission)   # ← notify author
+        self.message_user(request, f'{queryset.count()} submission(s) accepted.')
     accept_submissions.short_description = "Accept selected submissions"
     
     def reject_submissions(self, request, queryset):
-        updated = queryset.update(status='rejected')
-        self.message_user(request, f'{updated} submission(s) rejected.')
+        for submission in queryset:
+            submission.status = 'rejected'
+            submission.save()
+            send_submission_status_changed(submission)   # ← notify author
+        self.message_user(request, f'{queryset.count()} submission(s) rejected.')
     reject_submissions.short_description = "Reject selected submissions"
     
     def convert_to_article(self, request, queryset):
@@ -248,6 +259,7 @@ class SubmissionAdmin(admin.ModelAdmin):
             submission.converted_to_article = article
             submission.status = 'converted'
             submission.save()
+            send_submission_status_changed(submission)
 
             AuthorArticle.objects.create(
                 article=article,

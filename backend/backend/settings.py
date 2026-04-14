@@ -197,3 +197,6 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 # EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 # DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
+
+DEFAULT_FROM_EMAIL = 'Journal of Biological Sciences <noreply@journal.edu>'
+JOURNAL_NAME = 'Journal of Biological Sciences'
