@@ -61,6 +61,10 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == 'retrieve':
             return ArticleDetailSerializer
         return ArticleListSerializer
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -109,7 +113,8 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         user =  self.request.user
         if user.is_staff or user.is_editor:
             return Submission.objects.all()
-        return Submission.objects.filter(submitter=user)
+        else:
+            return Submission.objects.filter(submitter=user)
 
     def perform_create(self, serializer):
         serializer.save(submitter=self.request.user)

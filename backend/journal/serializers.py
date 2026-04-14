@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from .models import (
     Category, Volume, Issue, Article, AuthorArticle,
@@ -59,6 +60,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
     volume_number = serializers.IntegerField(source='volume.number', read_only=True)
     issue_number  = serializers.IntegerField(source='issue.number', read_only=True)
     keywords_list = serializers.SerializerMethodField()
+    published_pdf = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
@@ -81,6 +83,15 @@ class ArticleListSerializer(serializers.ModelSerializer):
             for aa in author_articles
         ]
 
+    def get_published_pdf(self, obj):
+        if not obj.published_pdf:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.published_pdf.url)
+        # fallback
+        return f"{settings.FRONTEND_URL}{obj.published_pdf.url}"
+
     def get_keywords_list(self, obj):
         return obj.get_keywords_list()
 
@@ -91,6 +102,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     volume_number = serializers.IntegerField(source='volume.number', read_only=True)
     issue_number = serializers.IntegerField(source='issue.number', read_only=True)
     keywords_list = serializers.ListField(source='get_keywords_list', read_only=True)
+    published_pdf = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
@@ -103,25 +115,65 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
 
+    def get_published_pdf(self, obj):
+        if not obj.published_pdf:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.published_pdf.url)
+        # fallback
+        from django.conf import settings
+        return f"{settings.FRONTEND_URL}{obj.published_pdf.url}"
+
         
 class SubmissionSerializer(serializers.ModelSerializer):
     submitter_name = serializers.CharField(source='submitter.get_full_name', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
+    manuscript_file_url = serializers.SerializerMethodField()
+    cover_letter_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Submission
         fields = [
-            'id', 'title', 'abstract', 'keywords', 'category', 'category_name',
-            'submitter', 'submitter_name', 'co_authors', 'manuscript_file',
-            'cover_letter', 'status', 'submitted_at', 'updated_at'
+            'id', 'title', 'abstract', 'keywords',
+            'category', 'category_name',
+            'submitter', 'submitter_name', 'co_authors',
+            'manuscript_file', 'manuscript_file_url',
+            'cover_letter', 'cover_letter_url',
+            'status', 'page_count',
+            'submitted_at', 'updated_at'
         ]
-        read_only_fields = ['submitter', 'status', 'submitted_at', 'updated_at']
+        read_only_fields = [
+            'submitter', 'status', 'submitted_at',
+            'updated_at', 'page_count'
+        ]
+        extra_kwargs = {
+            'manuscript_file': {'write_only': True},  # upload only, read via _url field
+            'cover_letter':    {'write_only': True},
+        }
+
+    def get_manuscript_file_url(self, obj):
+        if not obj.manuscript_file:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.manuscript_file.url)
+        return obj.manuscript_file.url
+
+    def get_cover_letter_url(self, obj):
+        if not obj.cover_letter:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.cover_letter.url)
+        return obj.cover_letter.url
 
     def create(self, validated_data):
-        # Automatically Set Submitter to Current User
-        validated_data['submitter'] = self.context['request'].user
+        # submitter is set via perform_create in the view, not here
+        # keeping this as fallback only
+        if 'submitter' not in validated_data:
+            validated_data['submitter'] = self.context['request'].user
         return super().create(validated_data)
-
 
 class ReviewSerializer(serializers.ModelSerializer):
     article_title = serializers.CharField(source='article.title', read_only=True)
