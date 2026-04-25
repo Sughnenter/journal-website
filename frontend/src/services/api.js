@@ -174,11 +174,16 @@ export const submissionsAPI = {
   },
 
   create: async (formData) => {
-    // For file uploads, use different headers
     const response = await api.post('/submissions/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  // Update an existing submission (for edit-and-resubmit flow on the same record)
+  update: async (id, formData) => {
+    const response = await api.patch(`/submissions/${id}/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
   },
@@ -186,8 +191,9 @@ export const submissionsAPI = {
   withdraw: async (id) => {
     const response = await api.post(`/submissions/${id}/withdraw/`);
     return response.data;
-  }
+  },
 };
+
 
 // Categories API
 export const categoriesAPI = {

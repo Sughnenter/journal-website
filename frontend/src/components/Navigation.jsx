@@ -161,20 +161,53 @@ export function Navigation() {
             >
               About
             </Link>
-            <Link
-              to="/login"
-              className="block py-2 text-gray-700 hover:text-blue-600 font-medium transition"
-              onClick={() => setToggleMenu(false)}
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/register"
-              className="block py-2 text-gray-700 hover:text-blue-600 font-medium transition"
-              onClick={() => setToggleMenu(false)}
-            >
-              Sign up
-            </Link>
+
+            {isAuthenticated ? (
+              <>
+                <div className="border-t border-gray-200 my-2"></div>
+                <Link
+                  to="/dashboard"
+                  className="block py-2 text-gray-700 hover:text-blue-600 font-medium transition"
+                  onClick={() => setToggleMenu(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/profile"
+                  className="block py-2 text-gray-700 hover:text-blue-600 font-medium transition"
+                  onClick={() => setToggleMenu(false)}
+                >
+                  Profile
+                </Link>
+                <button
+                  onClick={() => {
+                    logout();
+                    setToggleMenu(false);
+                  }}
+                  className="block w-full text-left py-2 text-gray-700 hover:text-blue-600 font-medium transition"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="border-t border-gray-200 my-2"></div>
+                <Link
+                  to="/login"
+                  className="block py-2 text-gray-700 hover:text-blue-600 font-medium transition"
+                  onClick={() => setToggleMenu(false)}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="block py-2 text-gray-700 hover:text-blue-600 font-medium transition"
+                  onClick={() => setToggleMenu(false)}
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>
