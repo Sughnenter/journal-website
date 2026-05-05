@@ -1,9 +1,12 @@
 from django.shortcuts import render
-from rest_framework import generics, status
+from rest_framework import generics, status, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.db.models import Q
 from journal.models import Submission, Review, Article
 from journal.serializers import ReviewSerializer, SubmissionSerializer, ArticleListSerializer
 from .serializers import (
@@ -13,6 +16,42 @@ from .serializers import (
 User = get_user_model()
 
 # Create your views here.
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Custom serializer to allow login with email or username"""
+    def validate(self, attrs):
+        # Get username from request (can be email or username)
+        username_or_email = attrs.get('username')
+        password = attrs.get('password')
+        
+        if not username_or_email or not password:
+            raise serializers.ValidationError('Must include "username" and "password".')
+        
+        # Try to find user by email or username
+        user = User.objects.filter(
+            Q(username=username_or_email) | Q(email=username_or_email)
+        ).first()
+        
+        if not user:
+            raise serializers.ValidationError('No active account found with the given credentials.')
+        
+        if not user.check_password(password):
+            raise serializers.ValidationError('No active account found with the given credentials.')
+        
+        if not user.is_active:
+            raise serializers.ValidationError('User account is disabled.')
+        
+        refresh = self.get_token(user)
+        data = {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
+        return data
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """Custom view to use the CustomTokenObtainPairSerializer"""
+    serializer_class = CustomTokenObtainPairSerializer
 
 class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()

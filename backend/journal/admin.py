@@ -5,6 +5,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils import timezone
 from .emails import send_submission_status_changed, send_article_published
+from .utils import extract_page_count, convert_manuscript_to_published_pdf
 from .models import (
     Category, Volume, Issue, Article, AuthorArticle,
     Submission, Review, Comment
@@ -213,34 +214,29 @@ class SubmissionAdmin(admin.ModelAdmin):
             self.message_user(request, 'No active issue found.', level='error')
             return
 
-        # Calculate the next available start page in this issue
-        last_article = Article.objects.filter(
-            issue=current_issue
-        ).order_by('-id').first()
-
+        last_article = Article.objects.filter(issue=current_issue).order_by('-id').first()
         next_start_page = 1
         if last_article and last_article.pages:
             try:
-                # Parse "45-67" → take the end page + 1
                 end = int(last_article.pages.split('-')[-1].strip())
                 next_start_page = end + 1
             except (ValueError, IndexError):
                 pass
 
         count = 0
+        pdf_failures = []
+
         for submission in queryset.filter(status='accepted', converted_to_article=None):
-            # Build page range from next_start_page + submission page count
             page_count = submission.page_count or extract_page_count(submission.manuscript_file)
             if page_count:
                 end_page = next_start_page + page_count - 1
                 pages = f"{next_start_page}-{end_page}"
-                next_start_page = end_page + 1  # advance for the next article in batch
+                next_start_page = end_page + 1
             else:
-                pages = ''  # leave blank if we couldn't extract
+                pages = ''
 
             placeholder_doi = f"10.pending/{uuid.uuid4().hex[:10]}"
 
-            
             article = Article.objects.create(
                 title=submission.title,
                 abstract=submission.abstract,
@@ -252,14 +248,21 @@ class SubmissionAdmin(admin.ModelAdmin):
                 submitted_date=submission.submitted_at,
                 volume=current_issue.volume,
                 issue=current_issue,
-                pages=pages,   
-                doi=placeholder_doi,# ← auto-filled
+                pages=pages,
+                doi=placeholder_doi,
             )
+
+            # ── Convert manuscript to published PDF ──────────────────
+            pdf_ok = convert_manuscript_to_published_pdf(submission, article)
+            if pdf_ok:
+                article.save()  # save with published_pdf now set
+            else:
+                pdf_failures.append(submission.title[:40])
+            # ─────────────────────────────────────────────────────────
 
             submission.converted_to_article = article
             submission.status = 'converted'
             submission.save()
-            send_submission_status_changed(submission)
 
             AuthorArticle.objects.create(
                 article=article,
@@ -267,12 +270,16 @@ class SubmissionAdmin(admin.ModelAdmin):
                 order=1,
                 is_corresponding=True
             )
+
+            from .emails import send_submission_status_changed
+            send_submission_status_changed(submission)
+
             count += 1
 
-        self.message_user(
-            request,
-            f'{count} submission(s) converted and assigned to {current_issue} with pages auto-filled.'
-        )
+        msg = f'{count} submission(s) converted and assigned to {current_issue}.'
+        if pdf_failures:
+            msg += f' PDF conversion failed for: {", ".join(pdf_failures)} — install LibreOffice to enable DOCX conversion.'
+        self.message_user(request, msg, level='success' if not pdf_failures else 'warning')
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
