@@ -15,6 +15,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 
+import cloudinary
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -50,10 +51,13 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
+    'cloudinary_storage',
+    'cloudinary',
 
     # Local apps
     'journal',
     'users',
+    
 ]
 
 MIDDLEWARE = [
@@ -137,6 +141,14 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 # STATICFILES_DIRS = [BASE_DIR / 'static']
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY':    os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Media files
 MEDIA_URL = '/media/'
